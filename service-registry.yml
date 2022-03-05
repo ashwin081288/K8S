@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eureka-cm
+  labels:
+    app: eureka-cm
+data:
+  eureka_service_address: http://eureka-0.eureka:8761/eureka
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka
+  namespace: default
+  labels:
+    name:  eureka
+spec:
+  selector:
+    app: eureka
+  clusterIP: None
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+  - name: eureka
+    protocol: TCP
+    port: 80
+    targetPort: 8761
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: eureka
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: eureka # has to match .spec.template.metadata.labels
+  serviceName: "eureka"
+  replicas: 1 # by default is 1
+  template:
+    metadata:
+      labels:
+        app: eureka # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: eureka
+        image: ashwin081288/service-registry:0.0.1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8761
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/eureka/html
+        env:
+          - name: EUREKA_SERVER_ADDRESS
+            valueFrom: 
+              configMapKeyRef:
+                name:  eureka-cm
+                key: eureka_service_address
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "my-storage-class"
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: eureka-lb
+  namespace: default
+spec:
+  selector:
+    app: eureka
+  type: NodePort
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+  - name: eureka
+    protocol: TCP
+    port: 80
+    targetPort: 8761

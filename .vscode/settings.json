@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "https://json.schemastore.org/prettierrc.json": "file:///c%3A/Users/ashwin/Documents/K8S/service-registry.yml"
+    },
+    "github-enterprise.uri": "https://github.com/ashwin081288/K8S.git"
+}
